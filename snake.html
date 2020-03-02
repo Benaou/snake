@@ -1,0 +1,149 @@
+<html>
+<head>
+<script type="text/javascript">
+var canvas;
+var ctx;
+
+var dimension = {w:25, h:25}; //dimension of boxes
+var grid = {w:21, h:15}; //dimension of grid
+var padding = 3; //padding between boxes on grid
+
+var direction = {x:1, y:0};
+var speed = 75; //ms
+var snake = [{x:0,y:0},{x:1,y:0},{x:2,y:0,xv:1,yv:0}];
+
+var foodColor = "red";
+var snakeColor = "black";
+var font = "50px serif";
+
+var intervalId;
+
+function turnGridOn(x, y) {
+	ctx.fillRect(padding+x*(dimension.w+padding), padding+y*(dimension.h+padding), dimension.w, dimension.h);
+}
+
+function turnGridOff(x, y) {
+	ctx.clearRect(padding+x*(dimension.w+padding), padding+y*(dimension.h+padding), dimension.w, dimension.h);
+}
+
+function clear() {
+	ctx.clearRect(padding,padding,canvas.width-2*padding,canvas.height-2*padding);
+}
+
+function pause() {
+	if(intervalId>0) {
+		clearInterval(intervalId);
+		intervalId = 0;
+		clear();
+		ctx.fillText("Paused",(canvas.width-150)/2,canvas.height/2);
+	} else if(intervalId==0) {
+		clear();
+		ctx.fillStyle = foodColor;
+		turnGridOn(foodPos.x,foodPos.y);
+		ctx.fillStyle = snakeColor;
+		for(let snakeBody of snake)
+			turnGridOn(snakeBody.x,snakeBody.y);
+		intervalId = setInterval(updateCanvas, speed);
+	}
+}
+
+function lose() {
+	alert(`You lost.\nScore: ${snake.length-3}`);
+	clearInterval(intervalId);
+	intervalId = -1;
+	reload();
+}
+
+function reload() {
+	clearInterval(intervalId);
+	clear();
+	snake = [{x:0,y:0},{x:1,y:0},{x:2,y:0,xv:1,yv:0}];
+	direction = {x:1, y:0};
+	placeFood();
+	ctx.fillStyle = foodColor;
+	turnGridOn(foodPos.x,foodPos.y);
+	ctx.fillStyle = snakeColor;
+	intervalId = setInterval(updateCanvas, speed);
+}
+
+var foodPos = {x:-1, y:-1};
+function placeFood() {
+	let index = [];
+	for(let i=0; i<grid.w*grid.h; i++)
+		index[i]=i;
+	for(let snakeBody of snake)
+		index = index.filter(xy => xy != snakeBody.y*grid.w + snakeBody.x); //remove snake's body from list
+	let foodPosXY = index[Math.floor(Math.random()*index.length)];
+	foodPos.x = foodPosXY % grid.w;
+	foodPos.y = Math.floor(foodPosXY / grid.w);
+	if(index.length == 0) {
+		alert("I guess you win...!");
+		clearInterval(intervalId);
+		intervalId = -1;
+	}
+}
+
+function isSnakeCoord(x,y) {
+	for(let snakeBody of snake)
+		if(snakeBody.x == x && snakeBody.y == y)
+			return true;
+	return false;
+}
+
+function updateCanvas() {
+	snakeHeadId = snake.length-1;
+
+	var newSnakeHead = {x:snake[snakeHeadId].x+direction.x, y:snake[snakeHeadId].y+direction.y, xv:direction.x, yv:direction.y};
+	if(isSnakeCoord(newSnakeHead.x, newSnakeHead.y) || newSnakeHead.x < 0 || newSnakeHead.y < 0 || newSnakeHead.x >= grid.w || newSnakeHead.y >= grid.h) {
+		lose();
+		return;
+	}
+
+	if(newSnakeHead.x == foodPos.x && newSnakeHead.y == foodPos.y) {
+		snake.push(newSnakeHead);
+		turnGridOn(newSnakeHead.x, newSnakeHead.y);
+		placeFood();
+		ctx.fillStyle = foodColor;
+		turnGridOn(foodPos.x,foodPos.y);
+		ctx.fillStyle = snakeColor;
+	} else {
+		turnGridOff(snake[0].x, snake[0].y);
+		for(var i=0; i<snakeHeadId; i++)
+			snake[i] = snake[i+1];
+		snake[snakeHeadId] = newSnakeHead;
+		turnGridOn(snake[snakeHeadId].x, snake[snakeHeadId].y);
+	}
+}
+
+onload = function() {
+	canvas = document.getElementById("canvas");
+	canvas.width = grid.w*(dimension.w+padding)+padding;
+	canvas.height = grid.h*(dimension.h+padding)+padding;
+	ctx = canvas.getContext('2d');
+	ctx.font = font;
+	ctx.strokeRect(0,0,canvas.width,canvas.height);
+	for(let snakeBody of snake)
+		turnGridOn(snakeBody.x, snakeBody.y);
+	document.body.addEventListener("keydown",
+		function(e) {
+			let key = e.key;
+			if(key == "ArrowLeft" && !snake[snake.length-1].xv) direction = {x:-1, y:0};
+			if(key == "ArrowRight" && !snake[snake.length-1].xv) direction = {x:1, y:0};
+			if(key == "ArrowUp" && !snake[snake.length-1].yv) direction = {x:0, y:-1};
+			if(key == "ArrowDown" && !snake[snake.length-1].yv) direction = {x:0, y:1};
+			if(key == "p" || e.key == " ") pause();
+			if(key == "r") reload();
+		}
+	);
+	intervalId = setInterval(updateCanvas, speed);
+	placeFood();
+	ctx.fillStyle = foodColor;
+	turnGridOn(foodPos.x,foodPos.y);
+	ctx.fillStyle = snakeColor;
+}
+</script>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+</body>
+</html>
