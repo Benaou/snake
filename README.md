@@ -7,4 +7,4 @@ Press R to restart.
 
 Upon death, page will provide a pop-up with your score and immediately restart the game.
 
-Hosted via Github Pages: https://benaou.github.io/snake/snake.html
+Hosted via GitHub Pages: https://benaou.github.io/snake/snake.html
